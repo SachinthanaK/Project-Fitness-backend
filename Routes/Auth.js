@@ -1,8 +1,10 @@
 const express = require("express");
 const router = express.Router();
+
 const User = require("../Models/UserSchema");
 const errorHandler = require("../Middlewares/errorMiddleware");
 const authTokenHandler = require("../Middlewares/checkAuthToken");
+
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
@@ -91,7 +93,7 @@ router.post("/login", async (req, res, next) => {
     }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json(createResponse(false, "Invalid credentials"));
+      return res.status(400).json(createResponse(false, "Wrong Password"));
     }
 
     const authToken = jwt.sign(
