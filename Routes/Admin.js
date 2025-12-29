@@ -86,6 +86,7 @@ router.get("/checklogin", adminTokenHandler, async (req, res) => {
     message: "Admin authenticated successfully",
   });
 });
+
 router.post("/logout", async (req, res, next) => {
   try {
     res.clearCookie("adminAuthToken");

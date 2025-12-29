@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+
 const authTokenHandler = require("../Middlewares/checkAuthToken");
 const jwt = require("jsonwebtoken");
 const errorHandler = require("../Middlewares/errorMiddleware");
@@ -42,6 +43,7 @@ router.post("/addcalorieintake", authTokenHandler, async (req, res) => {
   var query = item;
   request.get(
     {
+      // url: "https://api.api-ninjas.com/v1/nutrition?query=" + query,
       url: "https://api.api-ninjas.com/v1/nutrition?query=" + query,
       headers: {
         "X-Api-Key": process.env.NUTRITION_API_KEY,
@@ -71,25 +73,59 @@ router.post("/addcalorieintake", authTokenHandler, async (req, res) => {
         //     "sugar_g": 0.1
         // }]
 
-        body = JSON.parse(body);
-        let calorieIntake =
-          (body[0].calories / body[0].serving_size_g) * parseInt(qtyingrams);
-        const userId = req.userId;
-        const user = await User.findOne({ _id: userId });
-        user.calorieIntake.push({
-          item,
-          date: new Date(date),
-          quantity,
-          quantitytype,
-          calorieIntake: parseInt(calorieIntake),
-        });
+        // body = JSON.parse(body);
+        // let calorieIntake =
+        //   (body[1].calories / body[2].serving_size_g) * parseInt(qtyingrams);
+        // const userId = req.userId;
+        // const user = await User.findOne({ _id: userId });
+        // user.calorieIntake.push({
+        //   item,
+        //   date: new Date(date),
+        //   quantity,
+        //   quantitytype,
+        //   calorieIntake: parseInt(calorieIntake),
+        // });
+        console.log(body);
 
-        await user.save();
+        let fatGrams = body[0].fat_total_g;
+        console.log("Raw fat_total_g:", fatGrams, "Type:", typeof fatGrams);
+
+        // Handle all cases: number, numeric string, or invalid
+        if (fatGrams != null) {
+          const numValue = parseFloat(fatGrams);
+
+          if (!isNaN(numValue) && isFinite(numValue)) {
+            console.log("Valid fat value:", numValue);
+            // Use numValue here
+          } else {
+            console.log("Invalid fat value, using default (0)");
+            const numValue = 0; // or whatever default you prefer
+          }
+        } else {
+          console.log("Missing fat value, using default (0)");
+          const numValue = 0;
+        }
+        let proteinGrams = 2.7;
+        let carbsGrams = body[0].carbohydrates_total_g;
+        console.log(fatGrams, proteinGrams, carbsGrams);
+        // Calculate calories from macronutrients
+        let caloriesFromFat = fatGrams * 9; // Fat has 9 calories per gram
+        let caloriesFromProtein = proteinGrams * 4; // Protein has 4 calories per gram
+        let caloriesFromCarbs = carbsGrams * 4; // Carbs have 4 calories per gram
+
+        // Sum up the estimated calories
+        let estimatedCalories =
+          caloriesFromFat + caloriesFromProtein + caloriesFromCarbs;
+
+        console.log(`Estimated Calories: ${estimatedCalories}`);
+
+        // await user.save();
         res.json(createResponse(true, "Calorie intake added successfully"));
       }
     }
   );
 });
+
 router.post("/getcalorieintakebydate", authTokenHandler, async (req, res) => {
   const { date } = req.body;
   const userId = req.userId;
@@ -107,6 +143,7 @@ router.post("/getcalorieintakebydate", authTokenHandler, async (req, res) => {
     createResponse(true, "Calorie intake for the date", user.calorieIntake)
   );
 });
+
 router.post("/getcalorieintakebylimit", authTokenHandler, async (req, res) => {
   const { limit } = req.body;
   const userId = req.userId;
@@ -120,7 +157,6 @@ router.post("/getcalorieintakebylimit", authTokenHandler, async (req, res) => {
     let currentDate = new Date(
       date.setDate(date.getDate() - parseInt(limit))
     ).getTime();
-    // 1678910
 
     user.calorieIntake = user.calorieIntake.filter((item) => {
       return new Date(item.date).getTime() >= currentDate;
@@ -135,6 +171,7 @@ router.post("/getcalorieintakebylimit", authTokenHandler, async (req, res) => {
     );
   }
 });
+
 router.delete("/deletecalorieintake", authTokenHandler, async (req, res) => {
   const { item, date } = req.body;
   if (!item || !date) {
@@ -152,13 +189,16 @@ router.delete("/deletecalorieintake", authTokenHandler, async (req, res) => {
   await user.save();
   res.json(createResponse(true, "Calorie intake deleted successfully"));
 });
+
 router.get("/getgoalcalorieintake", authTokenHandler, async (req, res) => {
   const userId = req.userId;
   const user = await User.findById({ _id: userId });
+
   let maxCalorieIntake = 0;
   let heightInCm = parseFloat(user.height[user.height.length - 1].height);
   let weightInKg = parseFloat(user.weight[user.weight.length - 1].weight);
   let age = new Date().getFullYear() - new Date(user.dob).getFullYear();
+
   let BMR = 0;
   let gender = user.gender;
   if (gender == "male") {
