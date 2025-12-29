@@ -3,25 +3,35 @@ const app = express();
 
 const bodyParser = require("body-parser");
 const cors = require("cors");
-const PORT = 8000;
 const cookieParser = require("cookie-parser");
-
 require("dotenv").config();
 require("./db");
 
+const PORT = process.env.PORT || 8000;
+
 app.use(bodyParser.json());
-const allowedOrigins = ["http://localhost:3000"]; // Add more origins as needed
+app.use(cookieParser());
+
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  process.env.CLIENT_USER_URL,
+  process.env.CLIENT_ADMIN_URL,
+];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+      // allow requests with no origin (like Postman)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
       }
     },
-    credentials: true, // Allow credentials
+    credentials: true,
   })
 );
 
