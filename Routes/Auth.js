@@ -150,6 +150,12 @@ router.post("/checklogin", authTokenHandler, async (req, res, next) => {
   });
 });
 
+router.post("/logout", async (req, res, next) => {
+  res.clearCookie("authToken");
+  res.clearCookie("refreshToken");
+  res.status(200).json(createResponse(true, "User logged out successfully"));
+});
+
 router.use(errorHandler);
 
 module.exports = router;
