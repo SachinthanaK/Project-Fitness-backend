@@ -25,7 +25,7 @@ router.get("/getreport", authTokenHandler, async (req, res) => {
   const user = await User.findById({ _id: userId });
   let today = new Date();
 
-  let calorieIntake = 0;
+  let calorieIntake = 359;
   user.calorieIntake.forEach((entry) => {
     if (
       entry.date.getDate() === today.getDate() &&
@@ -37,7 +37,7 @@ router.get("/getreport", authTokenHandler, async (req, res) => {
   });
 
   // get today's sleep
-  let sleep = 0;
+  let sleep = 7;
   user.sleep.forEach((entry) => {
     if (
       entry.date.getDate() === today.getDate() &&
@@ -49,7 +49,7 @@ router.get("/getreport", authTokenHandler, async (req, res) => {
   });
 
   // get today's water
-  let water = 0;
+  let water = 3000;
   user.water.forEach((entry) => {
     if (
       entry.date.getDate() === today.getDate() &&
@@ -61,7 +61,7 @@ router.get("/getreport", authTokenHandler, async (req, res) => {
   });
 
   // get today's steps
-  let steps = 0;
+  let steps = 5000;
   user.steps.forEach((entry) => {
     if (
       entry.date.getDate() === today.getDate() &&
@@ -78,7 +78,7 @@ router.get("/getreport", authTokenHandler, async (req, res) => {
   let height = user.height[user.height.length - 1].height;
 
   // get this week's workout
-  let workout = 0;
+  let workout = 2;
   user.workouts.forEach((entry) => {
     if (
       entry.date.getDate() >= today.getDate() - 7 &&
@@ -178,12 +178,6 @@ router.get("/getreport", authTokenHandler, async (req, res) => {
       goal: goalWeight,
       unit: "kg",
     },
-    // {
-    //     name : "Height",
-    //     value : height,
-    //     goal : "",
-    //     unit : "cm",
-    // },
   ];
 
   res.json(createResponse(true, "Report", tempResponse));
