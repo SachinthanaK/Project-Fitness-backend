@@ -2,10 +2,8 @@ const express = require("express");
 const router = express.Router();
 
 const authTokenHandler = require("../Middlewares/checkAuthToken");
-const jwt = require("jsonwebtoken");
-const errorHandler = require("../Middlewares/errorMiddleware");
-const request = require("request");
 const User = require("../Models/UserSchema");
+const { getCaloriesPer100g } = require("../services/geminiClient");
 require("dotenv").config();
 
 function createResponse(ok, message, data) {
@@ -41,89 +39,32 @@ router.post("/addcalorieintake", authTokenHandler, async (req, res) => {
   }
 
   var query = item;
-  request.get(
-    {
-      // url: "https://api.api-ninjas.com/v1/nutrition?query=" + query,
-      url: "https://api.api-ninjas.com/v1/nutrition?query=" + query,
-      headers: {
-        "X-Api-Key": process.env.NUTRITION_API_KEY,
-      },
-    },
-    async function (error, response, body) {
-      if (error) return console.error("Request failed:", error);
-      else if (response.statusCode != 200)
-        return console.error(
-          "Error:",
-          response.statusCode,
-          body.toString("utf8")
-        );
-      else {
-        // body :[ {
-        //     "name": "rice",
-        //     "calories": 127.4,
-        //     "serving_size_g": 100,
-        //     "fat_total_g": 0.3,
-        //     "fat_saturated_g": 0.1,
-        //     "protein_g": 2.7,
-        //     "sodium_mg": 1,
-        //     "potassium_mg": 42,
-        //     "cholesterol_mg": 0,
-        //     "carbohydrates_total_g": 28.4,
-        //     "fiber_g": 0.4,
-        //     "sugar_g": 0.1
-        // }]
+  try {
+    const caloriesPer100g = await getCaloriesPer100g(query);
+    const calorieIntake = Math.round((caloriesPer100g / 100) * qtyingrams);
+    const userId = req.userId;
+    const user = await User.findOne({ _id: userId });
 
-        // body = JSON.parse(body);
-        // let calorieIntake =
-        //   (body[1].calories / body[2].serving_size_g) * parseInt(qtyingrams);
-        // const userId = req.userId;
-        // const user = await User.findOne({ _id: userId });
-        // user.calorieIntake.push({
-        //   item,
-        //   date: new Date(date),
-        //   quantity,
-        //   quantitytype,
-        //   calorieIntake: parseInt(calorieIntake),
-        // });
-        console.log(body);
+    user.calorieIntake.push({
+      item,
+      date: new Date(date),
+      quantity,
+      quantitytype,
+      calorieIntake,
+    });
 
-        let fatGrams = body[0].fat_total_g;
-        console.log("Raw fat_total_g:", fatGrams, "Type:", typeof fatGrams);
-
-        // Handle all cases: number, numeric string, or invalid
-        if (fatGrams != null) {
-          const numValue = parseFloat(fatGrams);
-
-          if (!isNaN(numValue) && isFinite(numValue)) {
-            console.log("Valid fat value:", numValue);
-            // Use numValue here
-          } else {
-            console.log("Invalid fat value, using default (0)");
-            const numValue = 0; // or whatever default you prefer
-          }
-        } else {
-          console.log("Missing fat value, using default (0)");
-          const numValue = 0;
-        }
-        let proteinGrams = 2.7;
-        let carbsGrams = body[0].carbohydrates_total_g;
-        console.log(fatGrams, proteinGrams, carbsGrams);
-        // Calculate calories from macronutrients
-        let caloriesFromFat = fatGrams * 9; // Fat has 9 calories per gram
-        let caloriesFromProtein = proteinGrams * 4; // Protein has 4 calories per gram
-        let caloriesFromCarbs = carbsGrams * 4; // Carbs have 4 calories per gram
-
-        // Sum up the estimated calories
-        let estimatedCalories =
-          caloriesFromFat + caloriesFromProtein + caloriesFromCarbs;
-
-        console.log(`Estimated Calories: ${estimatedCalories}`);
-
-        // await user.save();
-        res.json(createResponse(true, "Calorie intake added successfully"));
-      }
-    }
-  );
+    await user.save();
+    return res.json(
+      createResponse(true, "Calorie intake added successfully", {
+        caloriesPer100g,
+        calorieIntake,
+      })
+    );
+  } catch (err) {
+    console.error("Gemini calorie fetch failed", err);
+    const message = err?.message || "Unable to fetch calorie data";
+    return res.status(500).json(createResponse(false, message));
+  }
 });
 
 router.post("/getcalorieintakebydate", authTokenHandler, async (req, res) => {
