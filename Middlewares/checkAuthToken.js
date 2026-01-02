@@ -7,12 +7,10 @@ function checkAuth(req, res, next) {
   // console.log("Check Auth Token MIDDLEWARE CALLED", authToken)
 
   if (!authToken || !refreshToken) {
-    return res
-      .status(401)
-      .json({
-        message: "Authentication failed: No authToken or refreshToken provided",
-        ok: false,
-      });
+    return res.status(401).json({
+      message: "Authentication failed: No authToken or refreshToken provided",
+      ok: false,
+    });
   }
 
   jwt.verify(authToken, process.env.JWT_SECRET_KEY, (err, decoded) => {
@@ -24,12 +22,10 @@ function checkAuth(req, res, next) {
         (refreshErr, refreshDecoded) => {
           if (refreshErr) {
             // Both tokens are invalid, send an error message and prompt for login
-            return res
-              .status(401)
-              .json({
-                message: "Authentication failed: Both tokens are invalid",
-                ok: false,
-              });
+            return res.status(401).json({
+              message: "Authentication failed: Both tokens are invalid",
+              ok: false,
+            });
           } else {
             // Generate new auth and refresh tokens
             const newAuthToken = jwt.sign(
@@ -43,9 +39,16 @@ function checkAuth(req, res, next) {
               { expiresIn: "10d" }
             );
 
+            const cookieOptions = {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === "production",
+              sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+              maxAge: 24 * 60 * 60 * 1000,
+            };
+
             // Set the new tokens as cookies in the response
-            res.cookie("authToken", newAuthToken, { httpOnly: true });
-            res.cookie("refreshToken", newRefreshToken, { httpOnly: true });
+            res.cookie("authToken", newAuthToken, cookieOptions);
+            res.cookie("refreshToken", newRefreshToken, cookieOptions);
 
             // Continue processing the request with the new auth token
             req.userId = refreshDecoded.userId;

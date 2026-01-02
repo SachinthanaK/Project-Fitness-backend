@@ -107,8 +107,15 @@ router.post("/login", async (req, res, next) => {
       { expiresIn: "100m" }
     );
 
-    res.cookie("authToken", authToken, { httpOnly: true });
-    res.cookie("refreshToken", refreshToken, { httpOnly: true });
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    };
+
+    res.cookie("authToken", authToken, cookieOptions);
+    res.cookie("refreshToken", refreshToken, cookieOptions);
     res.status(200).json(
       createResponse(true, "Login successful", {
         authToken,
