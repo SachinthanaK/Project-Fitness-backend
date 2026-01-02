@@ -48,6 +48,7 @@ const waterTrackRoutes = require("./Routes/WaterTrack");
 const workoutTrackRoutes = require("./Routes/WorkoutTrack");
 const workoutRoutes = require("./Routes/WorkoutPlans");
 const reportRoutes = require("./Routes/Report");
+const userRoutes = require("./Routes/User");
 
 app.use("/auth", authRoutes);
 app.use("/calorieintake", calorieIntakeRoutes);
@@ -60,6 +61,7 @@ app.use("/watertrack", waterTrackRoutes);
 app.use("/workouttrack", workoutTrackRoutes);
 app.use("/workoutplans", workoutRoutes);
 app.use("/report", reportRoutes);
+app.use("/user", userRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: "The API is working" });
