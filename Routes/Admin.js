@@ -69,8 +69,15 @@ router.post("/login", async (req, res, next) => {
       process.env.JWT_ADMIN_SECRET_KEY,
       { expiresIn: "10m" }
     );
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 24 * 60 * 60 * 1000,
+      path: "/",
+    };
 
-    res.cookie("adminAuthToken", adminAuthToken, { httpOnly: true });
+    res.cookie("adminAuthToken", adminAuthToken, cookieOptions);
     res
       .status(200)
       .json(createResponse(true, "Admin login successful", { adminAuthToken }));
@@ -89,7 +96,14 @@ router.get("/checklogin", adminTokenHandler, async (req, res) => {
 
 router.post("/logout", async (req, res, next) => {
   try {
-    res.clearCookie("adminAuthToken");
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      path: "/",
+    };
+
+    res.clearCookie("adminAuthToken", cookieOptions);
     res.status(200).json(createResponse(true, "Admin logged out successfully"));
   } catch (err) {
     next(err);

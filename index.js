@@ -17,24 +17,25 @@ const allowedOrigins = [
   "http://localhost:3001",
   process.env.CLIENT_USER_URL,
   process.env.CLIENT_ADMIN_URL,
-];
+].filter(Boolean);
 
 app.use(
   cors({
     origin: function (origin, callback) {
       // allow requests with no origin (like Postman)
       if (!origin) return callback(null, true);
+      const isVercelPreview = origin.endsWith(".vercel.app");
 
-      if (allowedOrigins.includes(origin)) {
+      if (allowedOrigins.includes(origin) || isVercelPreview) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
       }
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    exposedHeaders: ['set-cookie'],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    exposedHeaders: ["set-cookie"],
   })
 );
 

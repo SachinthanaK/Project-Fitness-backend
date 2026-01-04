@@ -18,7 +18,7 @@ function checkAuth(req, res, next) {
       // Auth token has expired, check the refresh token
       jwt.verify(
         refreshToken,
-        process.env.REFRESH_TOKEN_SECRET,
+        process.env.JWT_REFRESH_SECRET_KEY,
         (refreshErr, refreshDecoded) => {
           if (refreshErr) {
             // Both tokens are invalid, send an error message and prompt for login
