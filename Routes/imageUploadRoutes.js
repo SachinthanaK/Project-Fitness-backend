@@ -21,35 +21,38 @@ router.post("/uploadimage", upload.single("myimage"), async (req, res) => {
     return res.status(400).json({ ok: false, error: "No image file provided" });
   }
 
-  sharp(file.buffer)
-    .resize({ width: 800 })
-    .toBuffer(async (err, data, info) => {
-      if (err) {
-        console.error("Image processing error:", err);
-        return res
-          .status(500)
-          .json({ ok: false, error: "Error processing image" });
-      }
+  try {
+    // Step 1: Resize image using sharp
+    const resizedBuffer = await sharp(file.buffer)
+      .resize({ width: 800, withoutEnlargement: true })
+      .toBuffer();
 
-      cloudinary.uploader
-        .upload_stream({ resource_type: "auto" }, async (error, result) => {
+    // Step 2: Upload to cloudinary using Promise wrapper
+    const result = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        { resource_type: "auto", folder: "fitness-app" },
+        (error, result) => {
           if (error) {
-            console.error("Cloudinary Upload Error:", error);
-            return res
-              .status(500)
-              .json({
-                ok: false,
-                error: "Error uploading image to Cloudinary",
-              });
+            reject(error);
+          } else {
+            resolve(result);
           }
-
-          res.json({
-            ok: true,
-            imageUrl: result.url,
-            message: "Image uploaded successfully",
-          });
-        })
-        .end(data);
+        }
+      );
+      uploadStream.end(resizedBuffer);
     });
+
+    res.json({
+      ok: true,
+      imageUrl: result.secure_url || result.url,
+      message: "Image uploaded successfully",
+    });
+  } catch (error) {
+    console.error("Image upload error:", error.message || error);
+    res.status(500).json({
+      ok: false,
+      error: "Error uploading image: " + (error.message || "Unknown error"),
+    });
+  }
 });
 module.exports = router;
